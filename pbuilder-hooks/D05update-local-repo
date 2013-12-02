@@ -1,0 +1,3 @@
+LOCAL_REPO="/home/dmeulen/repo"
+(cd $LOCAL_REPO ; apt-ftparchive packages . > Packages)
+apt-get update
