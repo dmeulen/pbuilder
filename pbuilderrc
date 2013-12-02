@@ -1,10 +1,5 @@
 HOOKDIR="/home/dmeulen/git/pbuilder/pbuilder-hooks"
-OTHERMIRROR="deb [trusted=yes] file:///home/dmeulen/repo ./"
-BINDMOUNTS="/home/dmeulen/repo"
-EXTRAPACKAGES="apt-utils"
 
-# Codenames for Debian suites according to their alias. Update these when
-# needed.
 UNSTABLE_CODENAME="sid"
 TESTING_CODENAME="wheezy"
 STABLE_CODENAME="squeeze"
@@ -19,16 +14,19 @@ UBUNTU_SUITES=("saucy" "raring" "precise")
 
 # Mirrors to use. Update these to your preferred mirror.
 DEBIAN_MIRROR="ftp.nl.debian.org"
-UBUNTU_MIRROR="ftp.ubuntu.com"
+UBUNTU_MIRROR="nl.archive.ubuntu.com"
 
 # Optionally use the changelog of a package to determine the suite to use if
 # none set.
 if [ -z "${DIST}" ] && [ -r "debian/changelog" ]; then
     DIST=$(dpkg-parsechangelog | awk '/^Distribution: / {print $2}')
-    DIST="${DIST%%-*}"
     # Use the unstable suite for certain suite values.
     if $(echo "experimental UNRELEASED" | grep -q $DIST); then
         DIST="$UNSTABLE_CODENAME"
+    fi
+    # Use the stable suite for stable-backports.
+    if $(echo "$STABLE_BACKPORTS_SUITE" | grep -q $DIST); then
+        DIST="$STABLE"
     fi
 fi
 
@@ -65,18 +63,21 @@ DISTRIBUTION="$DIST"
 BUILDRESULT="/var/cache/pbuilder/$NAME/result/"
 APTCACHE="/var/cache/pbuilder/$NAME/aptcache/"
 BUILDPLACE="/var/cache/pbuilder/build/"
+BINDMOUNTS="/var/cache/archive"
 
 if $(echo ${DEBIAN_SUITES[@]} | grep -q $DIST); then
     # Debian configuration
     MIRRORSITE="http://$DEBIAN_MIRROR/debian/"
     COMPONENTS="main contrib non-free"
     DEBOOTSTRAPOPTS=("${DEBOOTSTRAPOPTS[@]}" "--keyring=/usr/share/keyrings/debian-archive-keyring.gpg")
+    OTHERMIRROR="deb file:///var/cache/archive $DIST/"
 
 elif $(echo ${UBUNTU_SUITES[@]} | grep -q $DIST); then
     # Ubuntu configuration
     MIRRORSITE="http://$UBUNTU_MIRROR/ubuntu/"
     COMPONENTS="main restricted universe multiverse"
     DEBOOTSTRAPOPTS=("${DEBOOTSTRAPOPTS[@]}" "--keyring=/usr/share/keyrings/ubuntu-archive-keyring.gpg")
+    OTHERMIRROR="deb file:///var/cache/archive $DIST/"
 else
     echo "Unknown distribution: $DIST"
     exit 1
